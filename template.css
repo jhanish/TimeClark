@@ -1,0 +1,63 @@
+body {
+    background-color: pink;
+    margin: 0;
+}
+
+h1 {
+    font-family: "Dancing Script";
+    color: #555;
+    font-size: 3em;
+    margin-left: 10%;
+    background-color: #999;
+    width: 100%;
+    border-top: 5px dashed white;
+    border-bottom: 5px dashed white; 
+    padding: 2%;
+}
+
+.big_button_div {
+    width: 100%;
+    background-color: white;
+    text-align: center;
+    padding-top: 3%;
+    padding-bottom: 3%;
+}
+
+button {
+    background-color: #a88;
+    font-size: 4em; 
+    font-family: "Dancing Script";
+    color: #444;
+    border-radius: 5px;
+    border-color: #A88;
+    padding: 2% 5%;
+    box-shadow: 0 4px 5px 0 rgba(0,0,0,0.5),
+                0 6px 10px 0 rgba(255,255,255,0.5);
+}
+
+button:hover {
+    color: white;
+}
+
+#timer_div {
+    text-align: center;
+}
+.time_numbers {
+    font-family: "birra", sans-serif;
+    font-weight: 500;
+    font-style: normal;
+    font-size: 8em;
+}
+
+@media (min-width: 1000px) {
+    button {
+        font-size: 2em;
+    }
+
+    .time_numbers {
+        font-size: 5em;
+    }
+}
+
+
+

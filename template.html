@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>The TimeClark</title>
+        
+        <link rel="stylesheet" href="template.css">
+
+        <link rel="stylesheet" href="https://use.typekit.net/lms6lcx.css">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Archivo+Narrow&family=Caprasimo&family=Dancing+Script:wght@400;500;600;700&family=Noto+Serif+Hebrew:wght@700&display=swap" rel="stylesheet">
+        <script>
+        
+        var clark_in_time = 0;
+        var the_timer;
+
+        function DoBigButton() {
+            const req = new XMLHttpRequest();
+            req.addEventListener("load", reqListener);
+            req.open("GET", "http://" + location.hostname + "/buttonpress");
+            req.send();
+        }
+        
+        function secondsTimerCallback() {
+            console.log("IN CALLBACK");
+            
+            if (clark_in_time == 0) return;
+
+            const right_now = new Date();
+            console.log("typeof(right_now)=" + typeof(right_now));
+            console.log("right_now = " + right_now);
+            
+            console.log("clark_in_time = " + clark_in_time);
+            console.log("typeof(clark_in_time) = " + typeof(clark_in_time));
+            
+            const clark_in_time_date = new Date(clark_in_time);
+            console.log("clark_in_time_date = " + clark_in_time_date);
+            
+            datediff = right_now.getTime() - clark_in_time_date.getTime()
+            console.log("typeof(clark_in_time_date) = " + typeof(clark_in_time_date));
+            console.log("Doing calc: " + right_now.getTime() + " - " + clark_in_time_date.getTime() + " = " + datediff);
+            console.log("datediff = " + datediff);
+            //console.log(type(datediff));
+            datediff = Math.floor(datediff / 1000);
+            console.log("datediff after division: " + datediff);
+            
+            dstring = "";
+
+            if (datediff > (60 * 60 * 24)) {
+                days = Math.floor(datediff / (60 * 60 * 24));
+                dstring = dstring + days + " Days ";
+                datediff -= days * 60 * 60 * 24;
+            }
+
+            if (datediff > (60 * 60)) {
+                hours = Math.floor(datediff / (60*60));
+                dstring = dstring + hours + " Hours ";
+                datediff -= hours * 60 * 60;
+            }
+
+            if (datediff > 60) {
+                minutes = Math.floor(datediff / 60);
+                dstring = dstring + minutes + " Minutes ";
+                datediff -= minutes * 60;
+            }
+
+            dstring = dstring + datediff + " Seconds";
+
+            //hours = datediff - (days * 60 * 60 * 24) / (60 * 60);
+            //minutes = datediff - (days * 60 * 60 * 24) - (hours * 60 * 60) / 60;
+            //seconds = datediff - (days * 60 * 60 * 24) - (hours * 60 * 60) - (minutes * 60);
+            
+            //output = days + " days, " + hours + ":" + minutes + ":" + seconds;
+            //output = datediff;
+            output = dstring;
+            
+            document.getElementById("clockspan").textContent = output;
+            
+            //document.getElementById("clockspan").textContent = days + " days, " + hours + "h : " +
+            //         minutes + "m: " + seconds + "s";
+            
+            
+            
+            the_timer = setTimeout(secondsTimerCallback, 1000);
+        }
+        
+        function reqListener() {
+            json = JSON.parse(this.responseText);
+            
+            button_text = "Clark out";
+            if (json.work_state == false) {
+                button_text = "Clark in";
+                clearTimeout(the_timer);
+                clark_in_time = "";
+                document.getElementById("clockspan").textContent = "00:00";
+            }
+                
+                
+            document.getElementById("bigbutton").textContent = button_text;
+            
+            if (json.work_state == true) {
+                clark_in_time = json.when;
+                //alert(clark_in_time);
+                secondsTimerCallback();
+                the_timer = setTimeout(secondsTimerCallback, 1000);     
+            }
+        }
+        </script>
+    </head>
+    <body>
+    
+        <h1>The TimeClark!</h1>
+        <p>%s</p>
+        <div class="big_button_div">
+            <button id="bigbutton" type="button" onclick="DoBigButton();">Clark-in</button>
+        </div>
+        
+        <div id="timer_div">
+            <span id="clockspan" class="time_numbers">00:00</span>
+        </div>
+    
+    </body>
+</html>
