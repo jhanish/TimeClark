@@ -3,22 +3,33 @@ import socket
 import time
 import json
 import ntptime
-from machine import Pin, RTC
+from machine import Pin, I2C, RTC
 import uasyncio as asyncio
 import timeclarkconfig as cfg
+from ssd1306 import SSD1306_I2C
 
-#led = Pin(15, Pin.OUT)
+# Set up the screen.
+i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
+oled = SSD1306_I2C(128, 64, i2c)
+
+oled.fill(0)
+oled.text("The TimeClark", 0, 0)
+oled.text("Setting up...", 0, 20)
+oled.show()
+
 onboard = Pin("LED", Pin.OUT, value=0)
 button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 
-#ssid = 'TheBeach'
-#password = 'imbisnet7'
 ssid = cfg.ssid
 password = cfg.password
 
 html_file = open("template.html", "r")
 html = html_file.read()
+html_file.close()
 
+css_file = open("template.css", "r")
+css_contents = css_file.read()
+css_file.close()
 
 wlan = network.WLAN(network.STA_IF)
 
@@ -44,6 +55,12 @@ def connect_to_network():
         print('connected')
         status = wlan.ifconfig()
         print('ip = ' + status[0])
+        
+        oled.fill(0)
+        oled.text("The TimeClark", 0, 0)
+        oled.text("ip address: ", 0, 20)
+        oled.text(status[0], 0, 40)
+        oled.show()
 
         print("Current time: " + str(time.localtime()))
         ntptime.settime()
@@ -64,6 +81,8 @@ def connect_to_network():
         #machine.RTC.init(actual_time)
         print("Adjusted time: " + str(time.localtime()))
 
+
+
 def add_data_to_file(json_string):
     print("WRITING TO FILE!")
     db = open("testdata.txt","a")
@@ -71,6 +90,9 @@ def add_data_to_file(json_string):
     db.write(json_string + "\n")
     db.flush()
     db.close()
+    
+
+
 
 async def serve_client(reader, writer):
     global current_work_state
@@ -87,7 +109,7 @@ async def serve_client(reader, writer):
     #print(request.find('/buttonpress'))
     
     if (request.find('/buttonpress') != -1):
-        print("big_button_pressed()!")
+        print("Doing /buttonpress")
 
         rtc = machine.RTC()
         rtc_time = rtc.datetime()
@@ -97,24 +119,13 @@ async def serve_client(reader, writer):
         onboard.value(current_work_state)
         data = {}
         data['work_state'] = current_work_state
-        #today = datetime.now()
-        #print("Today Datetime:", today)
-        #iso_date = today.isoformat()
-        #print('ISO DateTime:', iso_date)     
-        #data['when'] = iso_date
         
         dt = time.localtime()
-        #dt_iso8601 = str(dt[0]) + "-" + str(dt[1]).zfill(2) + "-" + str(dt[2]).zfill(2) + "T" + \
-        #             str(dt[3]) + ":" + str(dt[4]).zfill(2) + ":" + str(dt[5]).zfill(2)
         
         dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
-                     f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
+                        f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
 
-        
-        #dt = time.strftime("%Y-%m-%d %H:%M:%S")
-        rtc = machine.RTC()
         dt = rtc.datetime()
-
 
         print(dt)
         print (dt_iso8601)
@@ -122,7 +133,6 @@ async def serve_client(reader, writer):
         
         print(data)
         print("Timestamp info: ")
-        #print(time.localtime(data['when']))
         json_data = json.dumps(data)
         print(json_data)
 
@@ -135,11 +145,13 @@ async def serve_client(reader, writer):
         await writer.wait_closed()
         print("Client disconnected")
         return
+        
+      
     
     if (request.find("/template.css") != -1):
         print("Loading template.css")
-        css_file = open("template.css", "r")
-        css_contents = css_file.read()
+        #css_file = open("template.css", "r")
+        #css_contents = css_file.read()
         writer.write('HTTP/1.0 200 OK\r\nContent-type:text/css\r\n\r\n')
         writer.write(css_contents)
         await writer.drain()
@@ -166,7 +178,8 @@ async def serve_client(reader, writer):
         onboard.value(0)
         stateis = "LED is OFF"
         
-    response = html % stateis
+    #response = html % stateis
+    response = html
     writer.write('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
     writer.write(response)
 
@@ -174,8 +187,12 @@ async def serve_client(reader, writer):
     await writer.wait_closed()
     print("Client disconnected")
 
+
+
 def hardware_button_pressed():
     print("Hardware button pressed!")
+
+
 
 async def main():
     print('Connecting to Network...')
@@ -184,16 +201,11 @@ async def main():
     print('Setting up webserver...')
     asyncio.create_task(asyncio.start_server(serve_client, "0.0.0.0", 80))
     while True:
-        #onboard.on()
-        #print("heartbeat")
-        #await asyncio.sleep(0.25)
-        #onboard.off()
-        #await asyncio.sleep(5)
         if button.value():
             hardware_button_pressed()
             await asyncio.sleep(.5)
-            
-        await asyncio.sleep(.1)
+        else:
+            await asyncio.sleep(.1)
   
 try:
     asyncio.run(main())
