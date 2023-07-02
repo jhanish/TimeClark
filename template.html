@@ -45,27 +45,32 @@
             datediff = Math.floor(datediff / 1000);
             console.log("datediff after division: " + datediff);
             
-            dstring = "";
+            //dstring = "";
 
             if (datediff > (60 * 60 * 24)) {
                 days = Math.floor(datediff / (60 * 60 * 24));
-                dstring = dstring + days + " Days ";
+                document.getElementById("timer_days").textContent = days;
+            //    dstring = dstring + days + " Days ";
                 datediff -= days * 60 * 60 * 24;
             }
 
             if (datediff > (60 * 60)) {
                 hours = Math.floor(datediff / (60*60));
-                dstring = dstring + hours + " Hours ";
+                document.getElementById("timer_hours").textContent = hours;
+            //    dstring = dstring + hours + " Hours ";
                 datediff -= hours * 60 * 60;
             }
 
             if (datediff > 60) {
                 minutes = Math.floor(datediff / 60);
-                dstring = dstring + minutes + " Minutes ";
+                document.getElementById("timer_minutes").textContent = minutes;
+            //    dstring = dstring + minutes + " Minutes ";
                 datediff -= minutes * 60;
             }
 
-            dstring = dstring + datediff + " Seconds";
+            document.getElementById("timer_seconds").textContent = datediff;
+
+            //dstring = dstring + datediff + " Seconds";
 
             //hours = datediff - (days * 60 * 60 * 24) / (60 * 60);
             //minutes = datediff - (days * 60 * 60 * 24) - (hours * 60 * 60) / 60;
@@ -73,9 +78,9 @@
             
             //output = days + " days, " + hours + ":" + minutes + ":" + seconds;
             //output = datediff;
-            output = dstring;
+            //output = dstring;
             
-            document.getElementById("clockspan").textContent = output;
+            //document.getElementById("clockspan").textContent = output;
             
             //document.getElementById("clockspan").textContent = days + " days, " + hours + "h : " +
             //         minutes + "m: " + seconds + "s";
@@ -92,14 +97,20 @@
             if (json.work_state == false) {
                 button_text = "Clark in";
                 clearTimeout(the_timer);
-                clark_in_time = "";
-                document.getElementById("clockspan").textContent = "00:00";
+                clark_in_time = ""; 
+                document.getElementById("timer_table").hidden = true;
+                document.getElementById("timer_days").textContent = " ";
+                document.getElementById("timer_hours").textContent = " ";
+                document.getElementById("timer_minutes").textContent = " ";
+                document.getElementById("timer_seconds").textContent = " ";
+                //document.getElementById("clockspan").textContent = "00:00";
             }
                 
                 
             document.getElementById("bigbutton").textContent = button_text;
             
             if (json.work_state == true) {
+                document.getElementById("timer_table").hidden = false;
                 clark_in_time = json.when;
                 //alert(clark_in_time);
                 secondsTimerCallback();
@@ -117,7 +128,23 @@
         </div>
         
         <div id="timer_div">
-            <span id="clockspan" class="time_numbers">00:00</span>
+            <!--span id="clockspan" class="time_numbers">00:00</span-->
+
+            <table hidden id="timer_table">
+              <thead>
+              <tr>
+                <th>DAYS</th><th>HOURS</th><th>MINUTES</th><th>SECONDS</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+                <td id="timer_days"></td><td id="timer_hours"></td><td id="timer_minutes"></td><td id="timer_seconds"></td>
+              </tr>
+              </tbody>
+            </table>               
+
+
+
         </div>
     
     </body>
