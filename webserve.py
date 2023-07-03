@@ -35,6 +35,7 @@ wlan = network.WLAN(network.STA_IF)
 
 # boolean - true = working, false=not
 current_work_state = False
+clark_in_time = 0
 
 def connect_to_network():
     wlan.active(True)
@@ -90,12 +91,21 @@ def add_data_to_file(json_string):
     db.write(json_string + "\n")
     db.flush()
     db.close()
+
+
+
+def getISOTimeStringRightNow():
+    dt = time.localtime()
+        
+    dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
+                        f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
     
+    return dt_iso8601
 
 
 
 async def serve_client(reader, writer):
-    global current_work_state
+    global current_work_state, clark_in_time
     
     print("Client connected")
     request_line = await reader.readline()
@@ -108,12 +118,33 @@ async def serve_client(reader, writer):
     
     #print(request.find('/buttonpress'))
     
+    if (request.find('/heartbeat') != -1):
+        print("Doing /heartbeat")
+        data = {}
+        data['work_state'] = current_work_state
+        if (current_work_state == True):
+            data['when'] = clark_in_time
+        else:
+            data['when'] = getISOTimeStringRightNow()
+        
+        json_data = json.dumps(data)
+        print("Hearbeat sending back:  " + json_data)
+
+        writer.write('HTTP/1.0 200 OK\r\nContent-type:application/json\r\n\r\n')
+        writer.write(json_data)
+        await writer.drain()
+        await writer.wait_closed()
+        print("Client disconnected")
+        return
+
+
+
     if (request.find('/buttonpress') != -1):
         print("Doing /buttonpress")
 
-        rtc = machine.RTC()
-        rtc_time = rtc.datetime()
-        print("rtc_time: " + str(rtc_time))
+        #rtc = machine.RTC()
+        #rtc_time = rtc.datetime()
+        #print("rtc_time: " + str(rtc_time))
 
         current_work_state = not current_work_state
         onboard.value(current_work_state)
@@ -125,11 +156,13 @@ async def serve_client(reader, writer):
         dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
                         f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
 
-        dt = rtc.datetime()
+        #dt = rtc.datetime()
 
         print(dt)
         print (dt_iso8601)
+        
         data['when'] = dt_iso8601
+        clark_in_time = dt_iso8601
         
         print(data)
         print("Timestamp info: ")
@@ -190,7 +223,36 @@ async def serve_client(reader, writer):
 
 
 def hardware_button_pressed():
+    global current_work_state, clark_in_time
+
     print("Hardware button pressed!")
+    current_work_state = not current_work_state
+    onboard.value(current_work_state)
+
+    dt_ISO = getISOTimeStringRightNow()
+
+    if (current_work_state == False):
+        clark_in_time = 0
+    else:
+        clark_in_time = dt_ISO
+
+    data = {}
+    data['work_state'] = current_work_state
+    #dt = time.localtime()
+    #dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
+    #             f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
+    #print("dt:")
+    #print(dt)
+    #print (dt_iso8601)
+        
+    data['when'] = dt_ISO
+    print(data)
+    print("Timestamp info: ")
+    json_data = json.dumps(data)
+    print(json_data)
+
+    add_data_to_file(json_data)
+
 
 
 

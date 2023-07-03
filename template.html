@@ -14,6 +14,65 @@
         
         var clark_in_time = 0;
         var the_timer;
+        var current_work_state = false;
+
+        window.onload = function() {
+            heartBeat();
+        }
+
+        function heartBeat() {
+            const req = new XMLHttpRequest();
+            req.addEventListener("load", heartBeatListener);
+            req.open("GET", "http://" + location.hostname + "/heartbeat");
+            req.send();
+                        
+        }
+
+        function setBigButtonText() {
+            if (current_work_state == true) {
+                document.getElementById("bigbutton").textContent = "Clark Out";
+            }
+            else {
+                document.getElementById("bigbutton").textContent = "Clark In";
+            }
+        }
+
+        function clearAndHideTimer() {
+            document.getElementById("timer_hours").textContent = "";
+            document.getElementById("timer_days").textContent = "";
+            document.getElementById("timer_minutes").textContent = "";
+            document.getElementById("timer_seconds").textContent = "";
+
+            document.getElementById("timer_table").hidden = true;
+
+            clearTimeout(the_timer);
+        }
+
+        function startAndShowTimer() {
+            document.getElementById("timer_table").hidden = false;
+            the_timer = setTimeout(secondsTimerCallback, 1000);
+        }
+
+        function heartBeatListener() {
+            json = JSON.parse(this.responseText);
+
+            if (json.work_state != current_work_state) {
+                current_work_state = json.work_state;
+                setBigButtonText();
+
+                if (current_work_state == false) {
+                    clark_in_time = 0;
+                    clearAndHideTimer();    
+
+                }
+                else {
+                    clark_in_time = json.when;
+                    startAndShowTimer()
+                }
+            }
+
+            setTimeout(heartBeat, 3000);
+        }
 
         function DoBigButton() {
             const req = new XMLHttpRequest();
