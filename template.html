@@ -108,26 +108,37 @@
 
             if (datediff > (60 * 60 * 24)) {
                 days = Math.floor(datediff / (60 * 60 * 24));
+                if (!days) days = "00";
                 document.getElementById("timer_days").textContent = days;
+                
             //    dstring = dstring + days + " Days ";
                 datediff -= days * 60 * 60 * 24;
             }
 
             if (datediff > (60 * 60)) {
                 hours = Math.floor(datediff / (60*60));
-                document.getElementById("timer_hours").textContent = hours;
+                if (!hours) hours = "00";
+                hours_display = hours.toString().padStart(2,"0")
+
+                document.getElementById("timer_hours").textContent = hours.toString().padStart(2,"0");
             //    dstring = dstring + hours + " Hours ";
                 datediff -= hours * 60 * 60;
             }
 
-            if (datediff > 60) {
+            if (datediff > 60)
+             {
                 minutes = Math.floor(datediff / 60);
-                document.getElementById("timer_minutes").textContent = minutes;
+                minutes_string = minutes.toString().padStart(2, "0");
+                if (minutes_string == "") minutes_string = "00";
+
+                document.getElementById("timer_minutes").textContent = minutes_string;
             //    dstring = dstring + minutes + " Minutes ";
                 datediff -= minutes * 60;
             }
 
-            document.getElementById("timer_seconds").textContent = datediff;
+            seconds_string = datediff.toString().padStart(2,"0");
+            if (!seconds_string) seconds_string = "00";
+            document.getElementById("timer_seconds").textContent = seconds_string;
 
             //dstring = dstring + datediff + " Seconds";
 

@@ -7,18 +7,31 @@ from machine import Pin, I2C, RTC
 import uasyncio as asyncio
 import timeclarkconfig as cfg
 from ssd1306 import SSD1306_I2C
+import gc
+import os
+import machine 
+#import _thread
+import math
 
 # Set up the screen.
 i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
 oled = SSD1306_I2C(128, 64, i2c)
+current_mini_screen = 1
+mini_screens_count = 3
 
 oled.fill(0)
 oled.text("The TimeClark", 0, 0)
 oled.text("Setting up...", 0, 20)
 oled.show()
 
+def displayRefresh():
+    refreshMiniScreen()
+    #threading.Timer(1.0, displayRefresh).start()
+
 onboard = Pin("LED", Pin.OUT, value=0)
 button = Pin(16, Pin.IN, Pin.PULL_DOWN)
+button_left = Pin(26, Pin.IN, Pin.PULL_DOWN)
+button_right = Pin(27, Pin.IN, Pin.PULL_DOWN)
 
 ssid = cfg.ssid
 password = cfg.password
@@ -31,13 +44,18 @@ css_file = open("template.css", "r")
 css_contents = css_file.read()
 css_file.close()
 
+ip_address = "Unobtained"
+
 wlan = network.WLAN(network.STA_IF)
 
 # boolean - true = working, false=not
 current_work_state = False
+# when clarked in, in iso string format
 clark_in_time = 0
 
 def connect_to_network():
+    global ip_address
+
     wlan.active(True)
     wlan.config(pm = 0xa11140)  # Disable power-save mode
     wlan.connect(ssid, password)
@@ -56,6 +74,7 @@ def connect_to_network():
         print('connected')
         status = wlan.ifconfig()
         print('ip = ' + status[0])
+        ip_address = status[0]
         
         oled.fill(0)
         oled.text("The TimeClark", 0, 0)
@@ -75,6 +94,7 @@ def connect_to_network():
         
         #datetime() produces a tuple of year, month, day, dotw, hour, minute, second, ?
 
+        # Set the clock time, with our utc_offset applied.
         machine.RTC().datetime((actual_time[0], actual_time[1], actual_time[2], actual_time[6], actual_time[3], actual_time[4], actual_time[5], 0))
         #rtc.init(actual_time)
         #rtc.datetime(actual_time)
@@ -170,6 +190,7 @@ async def serve_client(reader, writer):
         print(json_data)
 
         add_data_to_file(json_data)
+        refreshMiniScreen()
 
         response = json_data
         writer.write('HTTP/1.0 200 OK\r\nContent-type:application/json\r\n\r\n')
@@ -192,28 +213,12 @@ async def serve_client(reader, writer):
         print("Client disconnected")
         return
 
-
-    led_on = request.find('/light/on')
-    led_off = request.find('/light/off')
-    print( 'led on = ' + str(led_on))
-    print( 'led off = ' + str(led_off))
-
-    stateis = ""
-    if led_on == 6:
-        print("led on")
-        led.value(1)
-        onboard.value(1)
-        stateis = "LED is ON"
-    
-    if led_off == 6:
-        print("led off")
-        led.value(0)
-        onboard.value(0)
-        stateis = "LED is OFF"
         
     #response = html % stateis
     response = html
-    writer.write('HTTP/1.0 200 OK\r\nContent-type: text/html\r\n\r\n')
+    
+    #writer.write('HTTP/1.0 404 Not Found\r\n\r\n')
+    writer.write('HTTP/1.0 200 ok\r\nContent-type:text/html\r\n\r\n')
     writer.write(response)
 
     await writer.drain()
@@ -252,19 +257,114 @@ def hardware_button_pressed():
     print(json_data)
 
     add_data_to_file(json_data)
+    refreshMiniScreen()
 
+def button_left_pressed():
+    global current_mini_screen
 
+    current_mini_screen = current_mini_screen - 1
+    if (current_mini_screen < 1):
+        current_mini_screen = mini_screens_count
+    refreshMiniScreen()
 
+def button_right_pressed():
+    global current_mini_screen
 
+    current_mini_screen = current_mini_screen + 1
+    if (current_mini_screen > mini_screens_count):
+        current_mini_screen = 1
+    refreshMiniScreen()
+
+def getCurrentTimeShortString():
+        tm = time.localtime()
+        ampm = "am"
+        the_hour = tm[3]
+        if the_hour > 12:
+            ampm = "pm"
+            the_hour = the_hour - 12
+        if the_hour == 0:
+            the_hour = 12
+
+        return f"{the_hour:02}:{tm[4]:02}:{tm[5]:02}{ampm}" 
+
+def fillToMakeCentered(str):
+    spaces = math.floor((16 - len(str)) / 2)
+    return ' ' * spaces + str
+
+def refreshMiniScreen():
+    global ip_address, current_work_state, clark_in_time
+
+    oled.fill(0)
+
+    # THE DEFAULT PAGE
+    if current_mini_screen == 1:
+
+        time_string = getCurrentTimeShortString()
+
+        oled.text(" THE TIMECLARK", 0, 0)
+        oled.text(f"   {time_string}", 0, 16)
+        oled.text("***************************", 0, 27)
+        oled.text("  IP Address", 0, 38)
+        oled.text(fillToMakeCentered(ip_address), 0, 48)
+        
+
+    # INFO SCREEN
+    if current_mini_screen == 2:
+        oled.text(f"INFO", 0, 0)
+        s = os.statvfs('/')
+        oled.text(f"Free:{s[0]*s[3]/1024} KB", 0, 18)
+        oled.text(f"Mem: {gc.mem_alloc()} of", 0, 27)
+        oled.text(f"     {gc.mem_free()} bytes used.", 0, 36)
+        oled.text(f"CPU: {machine.freq()/1000000}Mhz", 0, 47)
+        oled.text(f"IP:  {ip_address}", 0, 56)
+
+    # THE STATUS PAGE
+    if current_mini_screen == 3:
+        if (current_work_state == True):
+            oled.text("CLARKED IN", 0, 0)
+            clark_in_time_info = getTupleFromISODate(clark_in_time)
+            time_in_string = f"{clark_in_time_info[1]}/{clark_in_time_info[2]}/{clark_in_time_info[0]}"
+            time_in_string2 = f"{clark_in_time_info[3]}:{clark_in_time_info[4]}:{clark_in_time_info[5]} {clark_in_time_info[6]}"
+            oled.text(time_in_string, 0, 18)
+            oled.text(time_in_string2, 0, 27)
+            oled.text(getCurrentTimeShortString(), 0, 45)
+
+        else:
+            oled.text("CLARKED OUT", 0, 0)
+            oled.text(getCurrentTimeShortString(), 0, 45)
+
+    oled.show()
+
+def getTupleFromISODate(whenString):
+    timeanddate = whenString.split('T')
+    date_parts = timeanddate[0].split('-')
+    time_parts = timeanddate[1][0:8].split(':')
+    time_zone = timeanddate[1][8:]
+    return (date_parts[0], date_parts[1], date_parts[2], time_parts[0], time_parts[1], time_parts[2], time_zone)
+
+async def everySecondMaintenance():
+    while True:
+        #print("***** INSIDE everySecondMaintenance!!")
+        refreshMiniScreen()
+        await asyncio.sleep(1)
+
+    
 async def main():
     print('Connecting to Network...')
     connect_to_network()
 
     print('Setting up webserver...')
     asyncio.create_task(asyncio.start_server(serve_client, "0.0.0.0", 80))
+    asyncio.create_task(everySecondMaintenance())
     while True:
         if button.value():
             hardware_button_pressed()
+            await asyncio.sleep(.5)
+        elif button_left.value():
+            button_left_pressed()
+            await asyncio.sleep(.5)
+        elif button_right.value():
+            button_right_pressed()
             await asyncio.sleep(.5)
         else:
             await asyncio.sleep(.1)
