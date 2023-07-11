@@ -54,24 +54,27 @@
         }
 
         function heartBeatListener() {
-            json = JSON.parse(this.responseText);
+            try {
+                json = JSON.parse(this.responseText);
 
-            if (json.work_state != current_work_state) {
-                current_work_state = json.work_state;
-                setBigButtonText();
+                if (json.work_state != current_work_state) {
+                    current_work_state = json.work_state;
+                    setBigButtonText();
 
-                if (current_work_state == false) {
-                    clark_in_time = 0;
-                    clearAndHideTimer();    
+                    if (current_work_state == false) {
+                        clark_in_time = 0;
+                        clearAndHideTimer();    
 
-                }
-                else {
-                    clark_in_time = json.when;
-                    startAndShowTimer()
+                    }
+                    else {
+                        clark_in_time = json.when;
+                        startAndShowTimer()
+                    }
                 }
             }
-
-            setTimeout(heartBeat, 3000);
+            finally {
+                setTimeout(heartBeat, 3000);
+            }
         }
 
         function DoBigButton() {

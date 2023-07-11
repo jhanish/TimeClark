@@ -52,6 +52,7 @@ wlan = network.WLAN(network.STA_IF)
 current_work_state = False
 # when clarked in, in iso string format
 clark_in_time = 0
+clark_in_time_in_seconds = 0
 clean_time_string = ""
 
 def connect_to_network():
@@ -122,7 +123,10 @@ def add_data_to_file(in_or_out, tstamp):
 #def add_record_to_save_file(ClarkInOutEvent cioe):
 
 def getISOTimeStringRightNow():
-    dt = time.localtime()
+    return getISOTimeString(time.localtime())
+
+def getISOTimeString(time_tuple):
+    dt = time_tuple
         
     dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
                         f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
@@ -130,6 +134,40 @@ def getISOTimeStringRightNow():
     clean_time_string = f'{dt[0]}{dt[1]:02d}{dt[2]:02d}{dt[3]:02d}{dt[4]:02d}{dt[5]:02d}'
     
     return dt_iso8601, clean_time_string
+
+def getClarkedInDuration():
+    
+    global clark_in_time_in_seconds
+
+    time_now = time.mktime(time.localtime())
+    time_passed = time_now - clark_in_time_in_seconds
+    #print(f"Time passed: {time_passed}")
+
+    days = math.floor(time_passed / (60 * 60 * 24))
+    if (days > 0):
+        time_passed = time_passed - (days * (60 * 60 * 24))
+
+    hours = math.floor(time_passed / (60 * 60))
+    if (hours > 0):
+        time_passed = time_passed - (hours * (60 * 60))
+
+    minutes = math.floor(time_passed / 60)
+    if (minutes > 0):
+        time_passed = time_passed - (minutes * 60)
+
+    seconds = time_passed
+
+    return (days, hours, minutes, seconds)
+
+def doClarkInCommon():
+    global current_work_state, clark_in_time, clark_in_time_in_seconds
+
+    current_work_state = not current_work_state
+
+    clark_in_time_in_seconds = time.mktime(time.localtime())
+    #clark_in_time = getISOTimeString(
+
+    onboard.value(current_work_state)
 
 
 
@@ -246,12 +284,15 @@ async def serve_client(reader, writer):
 
 
 def hardware_button_pressed():
-    global current_work_state, clark_in_time
+    global current_work_state, clark_in_time, clark_in_time_in_seconds, current_mini_screen
 
     print("Hardware button pressed!")
     current_work_state = not current_work_state
     onboard.value(current_work_state)
 
+    ltime = time.localtime()
+    dt_epoch = time.mktime(ltime)
+    clark_in_time_in_seconds = dt_epoch
     dt_ISO, dt_clean = getISOTimeStringRightNow()
 
     if (current_work_state == False):
@@ -261,20 +302,12 @@ def hardware_button_pressed():
 
     data = {}
     data['work_state'] = current_work_state
-    #dt = time.localtime()
-    #dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
-    #             f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
-    #print("dt:")
-    #print(dt)
-    #print (dt_iso8601)
-        
     data['when'] = dt_ISO
-    print(data)
-    print("Timestamp info: ")
     json_data = json.dumps(data)
-    print(json_data)
 
     add_data_to_file(data['work_state'], dt_clean)
+    
+    current_mini_screen = 3    
     refreshMiniScreen()
 
 def button_left_pressed():
@@ -339,6 +372,9 @@ def refreshMiniScreen():
     # THE STATUS PAGE
     if current_mini_screen == 3:
         if (current_work_state == True):
+            
+            x = getClarkedInDuration()
+            
             oled.text("CLARKED IN", 0, 0)
             clark_in_time_info = getTupleFromISODate(clark_in_time)
             time_in_string = f"{clark_in_time_info[1]}/{clark_in_time_info[2]}/{clark_in_time_info[0]}"
@@ -346,6 +382,7 @@ def refreshMiniScreen():
             oled.text(time_in_string, 0, 18)
             oled.text(time_in_string2, 0, 27)
             oled.text(getCurrentTimeShortString(), 0, 45)
+            oled.text(f"{x[0]}d:{x[1]}h:{x[2]}m:{x[3]}s", 0, 54)
 
         else:
             oled.text("CLARKED OUT", 0, 0)
