@@ -35,6 +35,7 @@ button_right = Pin(27, Pin.IN, Pin.PULL_DOWN)
 
 ssid = cfg.ssid
 password = cfg.password
+tz_offset = cfg.timezone_offset
 
 html_file = open("template.html", "r")
 html = html_file.read()
@@ -135,6 +136,27 @@ def getISOTimeString(time_tuple):
     
     return dt_iso8601, clean_time_string
 
+
+
+def getFormattedStringFromStamp(tstamp):
+    tm = time.localtime(tstamp)    
+    ampm = "am"
+    the_hour = tm[3]
+    if the_hour > 12:
+        ampm = "pm"
+        the_hour = the_hour - 12
+    if the_hour == 0:
+        the_hour = 12
+
+    return f"{the_hour:02}:{tm[4]:02}:{tm[5]:02}{ampm}" 
+
+
+
+def getCurrentTimeShortString():
+    return getFormattedStringFromStamp(time.time())
+
+
+
 def getClarkedInDuration():
     
     global clark_in_time_in_seconds
@@ -159,16 +181,6 @@ def getClarkedInDuration():
 
     return (days, hours, minutes, seconds)
 
-def doClarkInCommon():
-    global current_work_state, clark_in_time, clark_in_time_in_seconds
-
-    current_work_state = not current_work_state
-
-    clark_in_time_in_seconds = time.mktime(time.localtime())
-    #clark_in_time = getISOTimeString(
-
-    onboard.value(current_work_state)
-
 
 
 async def serve_client(reader, writer):
@@ -182,8 +194,6 @@ async def serve_client(reader, writer):
         pass
 
     request = str(request_line)
-    
-    #print(request.find('/buttonpress'))
     
     clean_str = ""
 
@@ -207,46 +217,40 @@ async def serve_client(reader, writer):
         print("Client disconnected")
         return
 
+    #req.open("GET", "http://" + location.hostname + "/timediff?timestamp=" + tstamp
+    if (request.find('/timediff') != -1):
+        #current_time = time.mktime(time.localtime())
+        current_time = time.time()
+        print("ACTUAL TIME: " + getCurrentTimeShortString())
+        print("CURRENT TIME: " + getFormattedStringFromStamp(current_time))
+        client_tstamp = int(request.split("timestamp=")[1].split(" ")[0]) + (tz_offset * 60 * 60)
+        print("CLIENT TIME: " + getFormattedStringFromStamp(client_tstamp))
+        diff = current_time - client_tstamp
+        print("DIFF: " + str(diff))
+        writer.write('HTTP/1.0 200 OK\r\nContent-type:text/plain\r\n\r\n')
+        writer.write(str(diff))
+        await writer.drain()
+        await writer.wait_closed()
+        print("Client disconnected successfully.")
+        return
+                
 
 
     if (request.find('/buttonpress') != -1):
+        global clark_in_time
+        
         print("Doing /buttonpress")
 
-        global clean_time_string
+        hardware_button_pressed()
 
-        #rtc = machine.RTC()
-        #rtc_time = rtc.datetime()
-        #print("rtc_time: " + str(rtc_time))
-
-        current_work_state = not current_work_state
-        onboard.value(current_work_state)
         data = {}
         data['work_state'] = current_work_state
-        
-        #dt = time.localtime()
-        
-        #clean_time_string = f'{dt[0]}{dt[1]:02d}{dt[2]:02d}{dt[3]:02d}{dt[4]:02d}{dt[5]:02d}'
-
-        #dt_iso8601 = str(dt[0]) + "-" + f'{dt[1]:02d}' + "-" + f'{dt[2]:02d}' + "T" + \
-        #                f'{dt[3]:02d}' + ":" + f'{dt[4]:02d}' + ":" + f'{dt[5]:02d}' + "-05:00"
-
-        #dt = rtc.datetime()
-
-        #print(dt)
-        #print (dt_iso8601)
-        
-        dt_iso8601, dt_clean = getISOTimeStringRightNow()
-
-        data['when'] = dt_iso8601
-        clark_in_time = dt_iso8601
+        data['when'] = clark_in_time
         
         print(data)
         print("Timestamp info: ")
         json_data = json.dumps(data)
         print(json_data)
-
-        add_data_to_file(data['work_state'], dt_clean)
-        refreshMiniScreen()
 
         response = json_data
         writer.write('HTTP/1.0 200 OK\r\nContent-type:application/json\r\n\r\n')
@@ -266,20 +270,26 @@ async def serve_client(reader, writer):
         writer.write(css_contents)
         await writer.drain()
         await writer.wait_closed()
-        print("Client disconnected")
+        print("Delivered template.css")
         return
 
-        
-    #response = html % stateis
-    response = html
-    
-    #writer.write('HTTP/1.0 404 Not Found\r\n\r\n')
-    writer.write('HTTP/1.0 200 ok\r\nContent-type:text/html\r\n\r\n')
-    writer.write(response)
+    if (request.find(" / ") != -1) :    
+        #response = html % stateis
+        response = html
+        #writer.write('HTTP/1.0 404 Not Found\r\n\r\n')
+        writer.write('HTTP/1.0 200 ok\r\nContent-type:text/html\r\n\r\n')
+        writer.write(response)
 
+        await writer.drain()
+        await writer.wait_closed()
+        print("Delivered / (default document)")
+        return
+    
+    ### NO MATCHES, SEND 404 ###
+    writer.write('HTTP/1.0 404 Not Found\r\n\r\n')
     await writer.drain()
     await writer.wait_closed()
-    print("Client disconnected")
+    print("Delivered 404 error.")
 
 
 
@@ -326,21 +336,14 @@ def button_right_pressed():
         current_mini_screen = 1
     refreshMiniScreen()
 
-def getCurrentTimeShortString():
-        tm = time.localtime()
-        ampm = "am"
-        the_hour = tm[3]
-        if the_hour > 12:
-            ampm = "pm"
-            the_hour = the_hour - 12
-        if the_hour == 0:
-            the_hour = 12
 
-        return f"{the_hour:02}:{tm[4]:02}:{tm[5]:02}{ampm}" 
+
+
+
 
 def fillToMakeCentered(str):
     spaces = math.floor((16 - len(str)) / 2)
-    return ' ' * spaces + str
+    return ' ' * int(spaces) + str
 
 def refreshMiniScreen():
     global ip_address, current_work_state, clark_in_time

@@ -16,16 +16,38 @@
         var the_timer;
         var current_work_state = false;
 
+        // The time difference between the client's system clock, and the TimeClark's.
+        var client_server_timediff_seconds = 0;
+
         window.onload = function() {
-            heartBeat();
+            getClientServerTimediff();
+            //heartBeat();
+        }
+
+        function getClientServerTimediff() {
+            tstamp = Math.floor(Date.now() / 1000)
+            const req = new XMLHttpRequest();
+            req.addEventListener("load", timeDiffRequestListener);
+            req.open("GET", "http://" + location.hostname + "/timediff?timestamp=" + tstamp);
+            req.send();
         }
 
         function heartBeat() {
             const req = new XMLHttpRequest();
+            req.onerror = function(error) {
+                print("HTTP REQUEST ERRORED, RERUNNING HEARTBEAT...");
+                heartBeat();
+            };
             req.addEventListener("load", heartBeatListener);
             req.open("GET", "http://" + location.hostname + "/heartbeat");
             req.send();
                         
+        }
+
+        function timeDiffRequestListener() {
+            client_server_timediff_seconds = parseInt(this.responseText);
+            console.log("Timediff: " + client_server_timediff_seconds);
+            heartBeat();
         }
 
         function setBigButtonText() {
@@ -77,7 +99,7 @@
             }
         }
 
-        function DoBigButton() {
+        function clarkInOutHardwareButtonClicked() {
             const req = new XMLHttpRequest();
             req.addEventListener("load", reqListener);
             req.open("GET", "http://" + location.hostname + "/buttonpress");
@@ -103,18 +125,15 @@
             console.log("typeof(clark_in_time_date) = " + typeof(clark_in_time_date));
             console.log("Doing calc: " + right_now.getTime() + " - " + clark_in_time_date.getTime() + " = " + datediff);
             console.log("datediff = " + datediff);
-            //console.log(type(datediff));
-            datediff = Math.floor(datediff / 1000);
+            datediff = Math.floor(datediff / 1000) + client_server_timediff_seconds;
             console.log("datediff after division: " + datediff);
             
-            //dstring = "";
 
             if (datediff > (60 * 60 * 24)) {
                 days = Math.floor(datediff / (60 * 60 * 24));
                 if (!days) days = "00";
                 document.getElementById("timer_days").textContent = days;
                 
-            //    dstring = dstring + days + " Days ";
                 datediff -= days * 60 * 60 * 24;
             }
 
@@ -124,7 +143,6 @@
                 hours_display = hours.toString().padStart(2,"0")
 
                 document.getElementById("timer_hours").textContent = hours.toString().padStart(2,"0");
-            //    dstring = dstring + hours + " Hours ";
                 datediff -= hours * 60 * 60;
             }
 
@@ -135,7 +153,6 @@
                 if (minutes_string == "") minutes_string = "00";
 
                 document.getElementById("timer_minutes").textContent = minutes_string;
-            //    dstring = dstring + minutes + " Minutes ";
                 datediff -= minutes * 60;
             }
 
@@ -143,23 +160,6 @@
             if (!seconds_string) seconds_string = "00";
             document.getElementById("timer_seconds").textContent = seconds_string;
 
-            //dstring = dstring + datediff + " Seconds";
-
-            //hours = datediff - (days * 60 * 60 * 24) / (60 * 60);
-            //minutes = datediff - (days * 60 * 60 * 24) - (hours * 60 * 60) / 60;
-            //seconds = datediff - (days * 60 * 60 * 24) - (hours * 60 * 60) - (minutes * 60);
-            
-            //output = days + " days, " + hours + ":" + minutes + ":" + seconds;
-            //output = datediff;
-            //output = dstring;
-            
-            //document.getElementById("clockspan").textContent = output;
-            
-            //document.getElementById("clockspan").textContent = days + " days, " + hours + "h : " +
-            //         minutes + "m: " + seconds + "s";
-            
-            
-            
             the_timer = setTimeout(secondsTimerCallback, 1000);
         }
         
@@ -176,7 +176,6 @@
                 document.getElementById("timer_hours").textContent = " ";
                 document.getElementById("timer_minutes").textContent = " ";
                 document.getElementById("timer_seconds").textContent = " ";
-                //document.getElementById("clockspan").textContent = "00:00";
             }
                 
                 
@@ -185,7 +184,6 @@
             if (json.work_state == true) {
                 document.getElementById("timer_table").hidden = false;
                 clark_in_time = json.when;
-                //alert(clark_in_time);
                 secondsTimerCallback();
                 the_timer = setTimeout(secondsTimerCallback, 1000);     
             }
@@ -195,13 +193,11 @@
     <body>
     
         <h1>The TimeClark!</h1>
-        <!--p>%s</p1-->
         <div class="big_button_div">
-            <button id="bigbutton" type="button" onclick="DoBigButton();">Clark-in</button>
+            <button id="bigbutton" type="button" onclick="clarkInOutHardwareButtonClicked();">Clark-in</button>
         </div>
         
         <div id="timer_div">
-            <!--span id="clockspan" class="time_numbers">00:00</span-->
 
             <table hidden id="timer_table">
               <thead>
