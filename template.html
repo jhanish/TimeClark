@@ -33,14 +33,14 @@
         }
 
         function heartBeat() {
-            const req = new XMLHttpRequest();
-            req.onerror = function(error) {
-                print("HTTP REQUEST ERRORED, RERUNNING HEARTBEAT...");
-                heartBeat();
+            const req2 = new XMLHttpRequest();
+            req2.onerror = function(error) {
+                console.log("HTTP REQUEST ERRORED, RERUNNING HEARTBEAT...");
+                setTimeout(heartBeat, 3000);
             };
-            req.addEventListener("load", heartBeatListener);
-            req.open("GET", "http://" + location.hostname + "/heartbeat");
-            req.send();
+            req2.addEventListener("load", heartBeatListener);
+            req2.open("GET", "http://" + location.hostname + "/heartbeat");
+            req2.send();
                         
         }
 
@@ -184,7 +184,7 @@
             if (json.work_state == true) {
                 document.getElementById("timer_table").hidden = false;
                 clark_in_time = json.when;
-                secondsTimerCallback();
+                //secondsTimerCallback();
                 the_timer = setTimeout(secondsTimerCallback, 1000);     
             }
         }

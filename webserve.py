@@ -214,7 +214,7 @@ async def serve_client(reader, writer):
         writer.write(json_data)
         await writer.drain()
         await writer.wait_closed()
-        print("Client disconnected")
+        print("Returned results for /heartbeat...")
         return
 
     #req.open("GET", "http://" + location.hostname + "/timediff?timestamp=" + tstamp
@@ -231,7 +231,7 @@ async def serve_client(reader, writer):
         writer.write(str(diff))
         await writer.drain()
         await writer.wait_closed()
-        print("Client disconnected successfully.")
+        print("Returned results for /timediff...")
         return
                 
 
@@ -253,31 +253,35 @@ async def serve_client(reader, writer):
         print(json_data)
 
         response = json_data
-        writer.write('HTTP/1.0 200 OK\r\nContent-type:application/json\r\n\r\n')
+        writer.write('HTTP/1.0 200 OK\r\nContent-Type:application/json\r\n\r\n')
         writer.write(response)
         await writer.drain()
         await writer.wait_closed()
-        print("Client disconnected")
+        print("Returned results for /buttonpress...")
         return
         
       
     
     if (request.find("/template.css") != -1):
+        global css_contents
+
         print("Loading template.css")
         #css_file = open("template.css", "r")
         #css_contents = css_file.read()
-        writer.write('HTTP/1.0 200 OK\r\nContent-type:text/css\r\n\r\n')
+        writer.write('HTTP/1.0 200 OK\r\nContent-Type:text/css\r\n\r\n')
         writer.write(css_contents)
         await writer.drain()
         await writer.wait_closed()
         print("Delivered template.css")
         return
 
-    if (request.find(" / ") != -1) :    
+    if (request.find(" / ") != -1) : 
+        global html
+
         #response = html % stateis
         response = html
         #writer.write('HTTP/1.0 404 Not Found\r\n\r\n')
-        writer.write('HTTP/1.0 200 ok\r\nContent-type:text/html\r\n\r\n')
+        writer.write('HTTP/1.0 200 OK\r\nContent-Type:text/html\r\n\r\n')
         writer.write(response)
 
         await writer.drain()
@@ -286,10 +290,10 @@ async def serve_client(reader, writer):
         return
     
     ### NO MATCHES, SEND 404 ###
-    writer.write('HTTP/1.0 404 Not Found\r\n\r\n')
+    writer.write('HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n')
     await writer.drain()
     await writer.wait_closed()
-    print("Delivered 404 error.")
+    print("Delivered 404 error...")
 
 
 
