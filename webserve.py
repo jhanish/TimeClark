@@ -63,7 +63,7 @@ def connect_to_network():
     wlan.config(pm = 0xa11140)  # Disable power-save mode
     wlan.connect(ssid, password)
 
-    max_wait = 20
+    max_wait = 30
     while max_wait > 0:
         if wlan.status() < 0 or wlan.status() >= 3:
             break
@@ -183,6 +183,43 @@ def getClarkedInDuration():
 
 
 
+def getLogJSON():
+    log_line_list = []
+    file = open('testdata.txt', 'r')
+
+    while True:
+        data = {}
+        line = file.readline()
+
+        if not line:
+            break
+        print(line)
+        line_data = line.split(",")
+        if (line_data[0] == "i"):
+            data['work_state'] = True
+        else:
+            data['work_state'] = False    
+
+        data['when'] = int(line_data[1])
+        log_line_list.append(data)
+
+        ##year = line_data[1][0:3]
+        ##month = line_data[1][4:5]
+        ##day = line_data[1][6:7]
+        ##hour = line_data[1][8:9]
+        ##minute = line_data[1][10:11]
+        ##second = line_data[1][12:13]
+    
+    log_line_list.reverse()
+    json_data = json.dumps(log_line_list)
+    file.close()
+
+    print("RETURNING THIS JSON DATA: " + json_data)
+
+    return json_data
+
+
+
 async def serve_client(reader, writer):
     global current_work_state, clark_in_time
     
@@ -234,6 +271,16 @@ async def serve_client(reader, writer):
         print("Returned results for /timediff...")
         return
                 
+    
+
+    if (request.find('/log') != -1):
+        json_log = getLogJSON()
+        writer.write('HTTP/1.0 200OK\r\nContent-type:application/json\r\n\r\n')
+        writer.write(json_log)
+        await writer.drain()
+        await writer.wait_closed()
+        return
+
 
 
     if (request.find('/buttonpress') != -1):

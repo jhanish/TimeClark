@@ -7,12 +7,14 @@ h1 {
     font-family: "Dancing Script";
     color: #555;
     font-size: 6em;
-    margin-left: 10%;
+    margin-left: 5%;
     background-color: #999;
-    width: 100%;
+    width: 90%;
     border-top: 5px dashed white;
     border-bottom: 5px dashed white; 
-    padding: 2%;
+    padding-top: 2%;
+    padding-bottom: 2%;
+    padding-left: 5%;
 }
 
 .big_button_div {
@@ -24,11 +26,12 @@ h1 {
 }
 
 button {
+    margin: 3%;
     background-color: #a88;
     font-size: 6em; 
     font-family: "Dancing Script";
     color: #444;
-    border-radius: 5px;
+    border-radius: 15px;
     border-color: #A88;
     padding: 2% 5%;
     box-shadow: 0 4px 5px 0 rgba(0,0,0,0.5),
@@ -44,28 +47,30 @@ button:hover {
     width: 100%;
 }
 
-table {
+#timer_table {
   table-layout: fixed;
   border: 5px outset grey / darkgray; 
   padding: 0px;
   margin: 6% auto;
-  width: 75%; 
+  width: 90%; 
   
   /* border: #886666 2px; */
 }
 
-tr {
+#timer_table tr {
   border: 3px inset grey /darkgray; 
   margin: 1px;
   width: 10%; 
 }
 
-th {
+#timer_table th {
   background-color: #a88;
   padding: 3%;
+  font-size: 2em;
+  font-family: verdana;
 }
 
-td {
+#timer_table td {
   font-family: "birra", sans-serif;
   font-weight: 500;
   font-style: normal;
@@ -74,7 +79,7 @@ td {
   color: #444;
 }
 
-th, td {
+#timer_table th, td {
   border: 1px solid black;
 }
 
@@ -83,6 +88,59 @@ th, td {
     font-weight: 500;
     font-style: normal;
     font-size: 10em;
+}
+
+#log_table {
+    font-size: 1.5em;
+    width: 100%;
+}
+
+#log_table .daterow td {
+    font-family: "Dancing Script", sans-serif;
+    font-weight: bold;
+    font-size: 2.5em;
+    padding: 10px;
+    background-color: #aaa;
+}
+
+#log_table .in_out_row td {
+    font-family: "Dancing Script", sans-serif;
+    font-size: 3em;
+    padding: 10px;
+}
+
+#log_table .in_out_row td:nth-child(odd) {
+    background-color: lightsalmon;
+}
+
+#log_table .in_out_row td:nth-child(even) {
+    background-color: #a88;
+}
+
+#log_table tr:nth-child(even) {
+    background-color: pink;
+}
+
+#log_table tr:nth-child(odd) {
+    background-color: white;
+}
+
+.daterow {
+    font-family:"Dancing Script", sans-serif;
+    font-weight: bold;
+}
+
+#log_table td {
+    font-size: 1.5em;
+    font-family: verdana, arial, sans-serif;
+}
+
+#log_div {
+    text-align: center;
+    width: 100%;
+    background-color: #444;
+    font-family: Tahoma, Verdana, sans-serif;
+    font-size: 1em;
 }
 
 @media (min-width: 1000px) {

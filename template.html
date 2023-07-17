@@ -18,10 +18,135 @@
 
         // The time difference between the client's system clock, and the TimeClark's.
         var client_server_timediff_seconds = 0;
-
+        /*
         window.onload = function() {
             getClientServerTimediff();
+            refreshLog();
             //heartBeat();
+        }
+        */
+
+        window.addEventListener('load', function() {
+            getClientServerTimediff();
+            refreshLog();
+        });
+
+        function refreshLog() {
+            console.log("Inside refreshLog() about to send request.");
+            const req = new XMLHttpRequest();
+            req.addEventListener("load", refreshLogListener);
+            req.open("GET", "http://" + location.hostname + "/log")
+            req.send();
+            console.log("refreshLog() request sent.");
+        }
+
+
+        function getDataFromShortDate(when) {
+            var pieces = {};
+            when_date = when.toString();
+            pieces.year = when_date.slice(0, 4);
+            pieces.month = when_date.slice(4, 6);
+            pieces.day = when_date.slice(6, 8);
+            pieces.hour = when_date.slice(8, 10);
+            pieces.minute = when_date.slice(10, 12);
+            pieces.second = when_date.slice(12, 14);
+
+            if (pieces.hour == 0) pieces.hour = 12; 
+
+            console.log("Year: " + pieces.year + " month: " + pieces.month + " day: " + pieces.day + 
+                        " hour: " + pieces.hour + " minute: " + pieces.minute + " second: " + pieces.second); 
+
+            return pieces;
+        }    
+
+
+        function refreshLogListener() {
+
+            console.log("**** Inside refreshLogListener() ****");
+            console.log(this.response);
+
+            json_string = this.response.substring(this.response.indexOf('['));
+            console.log("json_string: " + json_string);
+
+            try {
+                json_obj = JSON.parse(json_string);
+            } catch (e) {
+                console.log(e + " : " + console.error(e));
+            }
+
+            console.log("JSON Object: " + json_obj);
+
+            return_string = "<table id=\"log_table\">";
+
+            //const reversedKeys = json_obj.keys.reverse();
+
+            //reversedKeys.forEach(key => {
+            //    console.log(key, json_obj[key]);
+
+            first = true;
+            last_date_string = "";
+
+            saved_out_time = "";
+            saved_out_time_string = "";
+
+            for (const key in json_obj) {
+                console.log(json_obj[key]);
+                tmp = json_obj[key];
+                date_data = getDataFromShortDate(tmp['when'])
+                date_string = date_data["month"] + "/" + date_data["day"] + "/" + date_data["year"];
+                
+                time_string = "";
+                if (date_data["hour"] > 12) {
+                    time_string += (date_data["hour"] - 12).toString().padStart(2,"0");
+                }
+                else {
+                    time_string += (date_data["hour"]).toString().padStart(2,"0");
+                }
+
+                time_string += ":" + (date_data["minute"].toString().padStart(2,"0"));
+
+                if (date_data["hour"] < 12) {
+                    time_string += " AM";
+                }
+                else {
+                    time_string += " PM";
+                }
+
+
+                if (last_date_string != date_string) {
+                    last_date_string = date_string;
+                    return_string += "<tr class=\"daterow\"><td colspan=\"2\">" + date_string + "</td></tr>\r\n";
+                    return_string += "<tr class=\"in_out_row\"><td>In</td><td>Out</td>\r\n";
+                }
+
+                if (first == true) {
+                    if (tmp['work_state'] == true) {
+                        // We have to make a partial line because the user is currently logged in.
+                        return_string += "<tr><td>" + time_string + "</td><td>?</td></tr>\r\n";
+                    }
+                    else { 
+                        saved_out_time_string = "<td>" + time_string + "</td></tr>\r\n";
+                        saved_out_time = date_data;
+                    }
+                    first = false;
+                }
+                else {
+                    if (tmp['work_state'] == true) {
+                        return_string += "<tr><td>" + time_string + "</td>" + saved_out_time_string;
+                    } else {
+                        saved_out_time_string = "<td>" + time_string + "</td></tr>\r\n";
+                        saved_out_time = date_data;
+                    }
+                }
+
+            }
+
+            return_string += "</table>"
+
+            //document.getElementById("log_div").textContent = return_string;
+            document.getElementById("log_div").innerHTML = return_string;
+            console.log(return_string);
+
         }
 
         function getClientServerTimediff() {
@@ -92,6 +217,8 @@
                         clark_in_time = json.when;
                         startAndShowTimer()
                     }
+
+                    refreshLog();
                 }
             }
             finally {
@@ -214,5 +341,8 @@
 
         </div>
     
+
+        <div id="log_div"></div>
+
     </body>
 </html>
