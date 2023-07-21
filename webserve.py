@@ -457,10 +457,53 @@ async def everySecondMaintenance():
         refreshMiniScreen()
         await asyncio.sleep(1)
 
+def loadLastState():
+    global current_work_state, clark_in_time, clark_in_time_in_seconds, current_mini_screen
+    lastline = ""
+
+    with open('testdata.txt') as f:
+        for line in f:
+            pass
+            lastline = line
+        
+    last_data = lastline.split(',')
+
     
+    if (last_data[0] == 'i'):
+    # The TimeClark is still running...  set it up to continue.
+        onboard.value(True)
+        clark_in_time = convertEZDateToISOString(last_data[1])
+        clark_in_time_in_seconds = convertEZDateToEpoch(last_data[1])
+        current_work_state = True
+        
+        current_mini_screen = 3
+        refreshMiniScreen()
+    return
+
+def convertEZDateToTuple(ezdate):
+    year = int(ezdate[0:4])
+    month = int(ezdate[4:6])
+    day = int(ezdate[6:8])
+    hour = int(ezdate[8:10])
+    minute = int(ezdate[10:12])
+    second = int(ezdate[12:14])
+    return (year, month, day, hour, minute, second)
+
+def convertEZDateToEpoch(ezdate):
+    tup_date = convertEZDateToTuple(ezdate)
+    return time.mktime((tup_date[0], tup_date[1], tup_date[2], tup_date[3], tup_date[4], tup_date[5], 0, 0))
+
+def convertEZDateToISOString(ezdate):
+    tup_date = convertEZDateToTuple(ezdate)
+    tup_date_iso8601 = str(tup_date[0]) + "-" + f'{tup_date[1]:02d}' + "-" + f'{tup_date[2]:02d}' + "T" + \
+                        f'{tup_date[3]:02d}' + ":" + f'{tup_date[4]:02d}' + ":" + f'{tup_date[5]:02d}' + "-05:00"
+    return tup_date_iso8601
+    
+
 async def main():
     print('Connecting to Network...')
     connect_to_network()
+    loadLastState()
 
     print('Setting up webserver...')
     asyncio.create_task(asyncio.start_server(serve_client, "0.0.0.0", 80))

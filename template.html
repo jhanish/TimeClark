@@ -115,26 +115,33 @@
 
                 if (last_date_string != date_string) {
                     last_date_string = date_string;
-                    return_string += "<tr class=\"daterow\"><td colspan=\"2\">" + date_string + "</td></tr>\r\n";
-                    return_string += "<tr class=\"in_out_row\"><td>In</td><td>Out</td>\r\n";
+                    return_string += "<tr class=\"daterow\"><td colspan=\"4\">" + date_string + "</td></tr>\r\n";
+                    return_string += "<tr class=\"in_out_row\"><td>In</td><td>Out</td><td>Total</td><td>Note</td>\r\n";
                 }
 
                 if (first == true) {
                     if (tmp['work_state'] == true) {
                         // We have to make a partial line because the user is currently logged in.
-                        return_string += "<tr><td>" + time_string + "</td><td>?</td></tr>\r\n";
+                        return_string += "<tr><td>" + time_string + "</td><td>?</td><td>?</td><td></td></tr>\r\n";
                     }
                     else { 
-                        saved_out_time_string = "<td>" + time_string + "</td></tr>\r\n";
+                        saved_out_time_string = time_string;
                         saved_out_time = date_data;
                     }
                     first = false;
                 }
                 else {
                     if (tmp['work_state'] == true) {
-                        return_string += "<tr><td>" + time_string + "</td>" + saved_out_time_string;
+                        date_in = new Date(date_data['year'], date_data['month'], date_data['day'], 
+                                           date_data['hour'], date_data['minute'], date_data['second']);
+                        date_out = new Date(saved_out_time['year'], saved_out_time['month'], saved_out_time['day'], 
+                                           saved_out_time['hour'], saved_out_time['minute'], saved_out_time['second']);
+                        duration = formatDurationForDisplay(date_out.getTime() - date_in.getTime());
+
+                        return_string += "<tr><td>" + time_string + "</td><td>" + saved_out_time_string + "</td><td>" + duration + "</td><td></td></tr>\r\n";
+
                     } else {
-                        saved_out_time_string = "<td>" + time_string + "</td></tr>\r\n";
+                        saved_out_time_string = time_string;
                         saved_out_time = date_data;
                     }
                 }
@@ -290,6 +297,26 @@
             the_timer = setTimeout(secondsTimerCallback, 1000);
         }
         
+        function formatDurationForDisplay(duration_in_millis) {
+
+            datediff = Math.floor(duration_in_millis / 1000);
+            console.log("The datediff is: " + datediff);
+            /*
+            if (datediff > (60 * 60 * 24)) {
+                days = Math.floor(datediff / (60 * 60 * 24));
+                if (!days) days = "00";
+                datediff -= days * 60 * 60 * 24;
+            }
+            */
+
+            //if (datediff > (60 * 60)) {
+                hours = (datediff / (60*60)).toFixed(2);
+                if (!hours) hours = "0.0";
+            //}
+
+            return hours.toString() + "h";
+        }
+
         function reqListener() {
             json = JSON.parse(this.responseText);
             
