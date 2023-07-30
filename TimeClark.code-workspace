@@ -10,6 +10,8 @@
 	],
 	"settings": {
 		"python.languageServer": "Pylance",
-		"picowgo.syncFolder": ""
+		"picowgo.syncFolder": "pico_sync_folder",
+		"workbench.colorTheme": "Abyss",
+		"editor.fontSize": 16
 	}
 }
