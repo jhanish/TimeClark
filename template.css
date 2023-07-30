@@ -1,3 +1,17 @@
+@font-face{
+    font-family: 'Digital-7';
+
+    src: url('digital-7 (italic).ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+    font-display: swap;
+
+    /*
+    src:  url('fonts/digital-7.ttf') format('woff2'),
+    url('digital-7.woff') format('woff');
+    */
+}
+
 body {
     background-color: pink;
     margin: 0;
@@ -71,9 +85,9 @@ button:hover {
 }
 
 #timer_table td {
-  font-family: "birra", sans-serif;
+  font-family: "Digital-7", Tahoma, Verdana;
   font-weight: 500;
-  font-style: normal;
+  font-style: italic;
   font-size: 8em;
   background-color:#CCC;
   color: #444;

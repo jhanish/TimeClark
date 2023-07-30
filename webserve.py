@@ -307,7 +307,16 @@ async def serve_client(reader, writer):
         print("Returned results for /buttonpress...")
         return
         
-      
+    if (request.find("digital-7%20(italic).ttf") != -1):
+        # client is requesting the font.
+        font_file = open("digital-7 (italic).ttf", "rb")
+        font_contents = font_file.read()  
+        writer.write('HTTP/1.0 200 OK\r\nContent-Type:font/ttf\r\n\r\n')
+        writer.write(font_contents)
+        await writer.drain()
+        await writer.wait_closed()
+        print("Delivered digital-7 font file")
+        return
     
     if (request.find("/template.css") != -1):
         global css_contents
@@ -340,7 +349,8 @@ async def serve_client(reader, writer):
     writer.write('HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n')
     await writer.drain()
     await writer.wait_closed()
-    print("Delivered 404 error...")
+    print("Delivered 404 error for the following request...")
+    print(request_line)
 
 
 
