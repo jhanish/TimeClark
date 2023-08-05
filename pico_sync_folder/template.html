@@ -122,7 +122,7 @@
                 if (first == true) {
                     if (tmp['work_state'] == true) {
                         // We have to make a partial line because the user is currently logged in.
-                        return_string += "<tr><td>" + time_string + "</td><td>?</td><td>?</td><td></td></tr>\r\n";
+                        return_string += "<tr><td>" + time_string + "</td><td>?</td><td>?</td><td><img src='images/note_empty.png'></td></tr>\r\n";
                     }
                     else { 
                         saved_out_time_string = time_string;
@@ -138,7 +138,7 @@
                                            saved_out_time['hour'], saved_out_time['minute'], saved_out_time['second']);
                         duration = formatDurationForDisplay(date_out.getTime() - date_in.getTime());
 
-                        return_string += "<tr><td>" + time_string + "</td><td>" + saved_out_time_string + "</td><td>" + duration + "</td><td></td></tr>\r\n";
+                        return_string += "<tr><td>" + time_string + "</td><td>" + saved_out_time_string + "</td><td>" + duration + "</td><td><img src='images/note_empty.png'></td></tr>\r\n";
 
                     } else {
                         saved_out_time_string = time_string;
@@ -356,7 +356,7 @@
             <table hidden id="timer_table">
               <thead>
               <tr>
-                <th>DAYS</th><th>HOURS</th><th>MINUTES</th><th>SECONDS</th>
+                <th>DAYS</th><th>HRS</th><th>MINS</th><th>SECS</th>
               </tr>
               </thead>
               <tbody>

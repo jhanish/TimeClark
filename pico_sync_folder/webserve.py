@@ -107,6 +107,20 @@ def connect_to_network():
 
 
 
+def isFile(filename):
+    found = False
+
+    try:
+        f = open(filename, "br")
+        f.close()
+        found = True
+    except:
+        found = False
+
+    return found
+
+
+
 def add_data_to_file(in_or_out, tstamp):
     
     in_or_out_string = 'i'
@@ -281,6 +295,35 @@ async def serve_client(reader, writer):
         await writer.wait_closed()
         return
 
+
+    if (request.find('/images/') != -1):
+        print("LOOKING FOR SOMETHING IN IMAGES FOLDER!")
+        print(request)
+
+        pieces = request.split('/images/')
+        pieces2 = pieces[-1].split(' HTTP/1')
+        filename = "images/" + pieces2[0]
+        print("Filename: " + filename)
+
+
+        if (isFile(filename) == True):
+            writer.write('HTTP/1.0 200OK\r\nContent-type:image/png\r\n\r\n')
+            image_file = open(filename, "rb")
+            image_contents = image_file.read()  
+            writer.write(image_contents)
+            await writer.drain()
+            await writer.wait_closed()
+            print("Delivered image: " + filename)
+        else:
+            ### NO MATCHES, SEND 404 ###
+            writer.write('HTTP/1.0 404 Not Found\r\nContent-Type: text/plain\r\n\r\n')
+            await writer.drain()
+            await writer.wait_closed()
+            print("Could not find the requested image.")
+            print("Delivered 404 error for the following request...")
+            print(request_line)
+
+        return
 
 
     if (request.find('/buttonpress') != -1):
