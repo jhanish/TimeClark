@@ -12,6 +12,10 @@ import os
 import machine 
 #import _thread
 import math
+from tinydb import TinyDB, Query
+
+#Set up the database
+tcdb = TinyDB('timeclarkdb.json')
 
 # Set up the screen.
 i2c=I2C(0,sda=Pin(0), scl=Pin(1), freq=400000)
@@ -133,6 +137,8 @@ def add_data_to_file(in_or_out, tstamp):
     db.write(in_or_out_string + "," + tstamp + "\n")
     db.flush()
     db.close()
+
+    tcdb.insert({'in_or_out': in_or_out_string, 'tstamp': tstamp})
 
 #{"work_state": false, "when": "2023-06-28T20:57:06-05:00"}
 #def add_record_to_save_file(ClarkInOutEvent cioe):
@@ -359,6 +365,7 @@ async def serve_client(reader, writer):
         await writer.drain()
         await writer.wait_closed()
         print("Delivered digital-7 font file")
+        font_file.close()
         return
     
     if (request.find("/template.css") != -1):
@@ -552,10 +559,25 @@ def convertEZDateToISOString(ezdate):
                         f'{tup_date[3]:02d}' + ":" + f'{tup_date[4]:02d}' + ":" + f'{tup_date[5]:02d}' + "-05:00"
     return tup_date_iso8601
     
-
+def assureSaveFile():
+    print("Assuring save file existence...")
+    try:
+        with open('testdata.txt') as file:
+          file.close()
+          print("File found.")
+          return
+    except OSError:
+        print("File not found.  Creating.")
+        with open('testdata.txt', 'w') as file:
+            file.close()
+            print("Created testdata.txt save file.")
+        
 async def main():
     print('Connecting to Network...')
     connect_to_network()
+
+    assureSaveFile()
+
     loadLastState()
 
     print('Setting up webserver...')
